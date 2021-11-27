@@ -77,13 +77,11 @@ double BehaviorPlannerFSM::get_look_ahead_distance(const State& ego_state) {
   // TODO-Lookahead: One way to find a reasonable lookahead distance is to find
   // the distance you will need to come to a stop while traveling at speed V and
   // using a comfortable deceleration.
-  auto look_ahead_distance =(0.0*0.0 - (50/3.6)*(50/3.6))/(2*2.5);
+  auto look_ahead_distance = velocity_mag*_lookahead_time + 0.5*accel_mag*_lookahead_time *_lookahead_time;
 
   // LOG(INFO) << "Calculated look_ahead_distance: " << look_ahead_distance;
 
-  look_ahead_distance =
-      std::min(std::max(look_ahead_distance, _lookahead_distance_min),
-               _lookahead_distance_max);
+  look_ahead_distance =  std::min(std::max(look_ahead_distance, _lookahead_distance_min), _lookahead_distance_max);
 
   // LOG(INFO) << "Final look_ahead_distance: " << look_ahead_distance;
 
@@ -138,15 +136,15 @@ State BehaviorPlannerFSM::state_transition(const State& ego_state, State goal,
       // use cosine and sine to get x and y
       //
       auto ang = goal.rotation.yaw + M_PI;
-      goal.location.x += std::cos(ang);  // <- Fix This
-      goal.location.y += std::sin(ang);  // <- Fix This
+      goal.location.x += _stop_line_buffer*std::cos(ang);  // <- Fix This
+      goal.location.y += _stop_line_buffer*std::sin(ang);  // <- Fix This
 
       // LOG(INFO) << "BP- new STOP goal at: " << goal.location.x << ", "<< goal.location.y;
 
       // TODO-goal speed at stopping point: What should be the goal speed??
-      goal.velocity.x = 1.0;  // <- Fix This
-      goal.velocity.y = 1.0;  // <- Fix This
-      goal.velocity.z = 1.0;  // <- Fix This
+      goal.velocity.x = 0.0;  // <- Fix This
+      goal.velocity.y = 0.0;  // <- Fix This
+      goal.velocity.z = 0.0;  // <- Fix This
 
     } else {
       // TODO-goal speed in nominal state: What should be the goal speed now
@@ -173,7 +171,7 @@ State BehaviorPlannerFSM::state_transition(const State& ego_state, State goal,
 
     // TODO-use distance rather than speed: Use distance rather than speed...
     // if (utils::magnitude(ego_state.velocity) <= _stop_threshold_speed) {  // -> Fix this
-      if (distance_to_stop_sign <= P_STOP_THRESHOLD_DISTANCE) {
+    if (distance_to_stop_sign <= P_STOP_THRESHOLD_DISTANCE) {
       // TODO-move to STOPPED state: Now that we know we are close or at the
       // stopping point we should change state to "STOPPED"
       _active_maneuver = STOPPED;  // <- Fix This
